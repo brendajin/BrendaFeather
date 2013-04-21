@@ -17,7 +17,7 @@ http.createServer(function (request,response) {
     var body = makeBody(path, querystring);
     response.writeHead(200, {
     'Content-Length': body.length,
-    'Content-Type': 'text/html' });
+    'Content-Type': getType(document) });
     response.end(body);
 }).listen(process.env.PORT || 5000);
 
