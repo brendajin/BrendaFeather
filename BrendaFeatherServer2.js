@@ -1,11 +1,15 @@
 var http = require('http'),
     url = require('url'),
     fs = require('fs'),
-    qs = require('querystring');
+    qs = require('querystring')
+    events = require('events');
 
+var header ='<!doctype html><html><head><title>Give us your stuff</title></head><body><div class="header"><h1>Give us your stuff</h1>';
+var goBack ='<a href="/">Go Back Home</a>';
+var footer ='</body>';
 
 http.createServer(function (request,response) {
-    console.log('server running');
+    //console.log('server running');
 
 	var path = url.parse(request.url).pathname;
     var querystring = url.parse(request.url, true).query;  //return an object from a querystring with raw name-value pairs.
@@ -16,11 +20,14 @@ http.createServer(function (request,response) {
 	    'Content-Type': 'text/html' }
     );
 
+    //response.end(body);
+
     request.form = '';
 	request.addListener('data', function(chunk) {
         //handle a chunk of data, passed in as a buffer.
         //Buffers are easily transformed to strings.
         request.form += chunk.toString();
+        console.log(request.form);
     });
 
     //This event is emitted when we reach the end of the request body.
@@ -31,27 +38,25 @@ http.createServer(function (request,response) {
         if (request.method == 'POST') {
             request.form = qs.parse(request.form);
             var appendData = '{name: \'' + request.form.name + '\', email: ' + request.form.email + ', dessert: ' + request.form.dessert + '} \n';
+            console.log("42: " + appendData);
             fs.appendFile('stuff.txt', appendData, 'utf8', function(err) {
             	if(err) throw err;
             	console.log('The data to append ' + appendData + ' was appended to the file');
 	        });
-	        console.log(request.form.name);
-	        console.log(typeof request.form.name);
+	        console.log("45:", request.form);
+	        //console.log(typeof request.form.name);
 	        var username = request.form.name;
 	        var body = makeBody('/submit', username);
-	        console.log('50: ' + username);
+	        //console.log('50: ' + username);
         }
         //Request exists in a higher "scope" than this listener callback.
         //thus, we can use this property to indicate a "state". If we've "ended", it will be true. Otherwise, undefined.
         //This is useful in case a "close" event fires before "end".
         request.ended = true;
-        
     });
 
     }
 
-    // this is a race condition if put in the wrong place
-    response.end(body);
     //This event is emitted when the connection is closed.
     request.addListener('close', function() {
         //Checking for an edge case, in this case, we didn't get the entire message.
@@ -61,47 +66,13 @@ http.createServer(function (request,response) {
             return;
         }
     });
-}).listen(process.env.PORT || 8124);
+}).listen(process.env.PORT || 8126);
 
 function makeBody(path, querystring) {
-    var compiledPage = new events.EventEmitter();
-
-    compiledPage.addListener('readFile', function() {
-        if (compiledPage.headerLoaded === true && compiledPage.footerLoaded === true) {
-            compiledPage.data = {};
-
-            for (var key in data) {
-                compiledPage.data[key] = data[key];
-                console.log("in for: " + compiledPage.data[key]);
-            }
-            compiledPage.data.body = compiledPage.body;
-
-            var source = _.template(compiledPage.container, compiledPage.data); //Oh look! The point of the exercise!
-
-            callback(source);
-        }
-    });
-
-
-    fs.readFile('header.html', function(err, data) {
-        if(err) throw err;
-        data.toString();
-        console.log("line 8: " + data);
-        compiledPage.headerLoaded = true;
-        compiledPage.emit('readFile');
-    });
-    fs.readFile('footer.html', function(err, data) {
-        if(err) throw err;
-        data.toString();
-        console.log("line 13: " + data);
-        compiledPage.footerLoaded = true;
-        compiledPage.emit('readFile');
-    });
-
+	console.log('path: ' + path + ' querystring: ' + querystring);
     var body = header;
-    console.log("80: " + header);
     var userName = querystring || 'lady';
-
+    //console.log('name: ' + userName + ' body: ' + body);
 
 	switch (path) {
 		case '/':
@@ -110,7 +81,7 @@ function makeBody(path, querystring) {
 
 		case '/submit':
 			console.log('83: ' + typeof userName);
-			console.log('84: ' + userName);
+			console.log('84: ', userName);
 			body += "Hello, " + userName + "!";
 	  		break;	
 
@@ -125,3 +96,38 @@ function makeBody(path, querystring) {
     body += footer;
     return body;
 };
+
+function getType(document) {
+    //only if the status code is 200 do we need to really find out what we're serving up.
+    var type = 'text/html';
+    if (document.statusCode == 200) {
+        switch (path.extname(document.path)) {
+
+            case 'html':
+                type = 'text/html';
+                break;
+            case 'js':
+                type = 'text/javascript';
+                break;
+            case 'css':
+                type = 'text/css';
+                break;
+            case 'png':
+                type = 'image/png';
+                break;
+            case 'jpg':
+            case 'jpeg':
+                type = 'image/jpeg';
+                break;
+            case 'gif':
+                type = 'image/gif';
+                break;
+            case 'ico':
+                type = 'image/x-icon';
+                break;
+            default:
+            break;
+        }
+    }
+    return type;
+}
