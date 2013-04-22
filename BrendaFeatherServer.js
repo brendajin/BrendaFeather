@@ -19,7 +19,7 @@ http.createServer(function (request,response) {
 	    'Content-Type': 'text/html' }
     );
 
-    response.end(body);
+    
 
     request.form = '';
 	request.addListener('data', function(chunk) {
@@ -31,9 +31,6 @@ http.createServer(function (request,response) {
     //This event is emitted when we reach the end of the request body.
     //In some cases, we might never reach the end, because the connection is prematurely closed. We want to check for that.
 	if ( path !== '/favicon.ico') {
-
-    	
-    
 
     request.addListener('end', function() {
         if (request.method == 'POST') {
@@ -53,10 +50,11 @@ http.createServer(function (request,response) {
         //thus, we can use this property to indicate a "state". If we've "ended", it will be true. Otherwise, undefined.
         //This is useful in case a "close" event fires before "end".
         request.ended = true;
+        
     });
 
     }
-
+    response.end(body);
     //This event is emitted when the connection is closed.
     request.addListener('close', function() {
         //Checking for an edge case, in this case, we didn't get the entire message.
